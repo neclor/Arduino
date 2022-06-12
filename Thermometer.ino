@@ -14,7 +14,7 @@ int vccPin = 5;
 int gndPin = 6;
 
 int MeasurePeriod = 3000;
-File dataFile;
+File datafile;
 
 static DS1307 RTC;
 
@@ -93,8 +93,8 @@ void loop() {
 
   if (dataFile) {
     PrintC(year, month, day, hours, minutes, seconds, temp, false);
-    dataFile.write(buf);
-    dataFile.println();
+    datafile.write(buf);
+    datafile.println();
   }
 
   Serial.println();
