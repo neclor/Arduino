@@ -47,6 +47,7 @@ void setup() {
   pinMode(vccPin, OUTPUT); digitalWrite(vccPin, HIGH);
   pinMode(gndPin, OUTPUT); digitalWrite(gndPin, LOW);
   
+  // Wait for MAX chip to stabilize
   delay(500);
 
   RTC.begin();
@@ -57,9 +58,14 @@ void setup() {
   while (!Serial) {
     ;
   }
+  
   if (SD.begin(chipSelect)) {
     Serial.println("SD card initialized");
     dataFile = SD.open("datalog.txt", FILE_WRITE);
+    
+    if (!dataFile){
+      Serial.println("Open datalog.txt error");
+    }
   }        
   else{
     Serial.println("SD card initialization error, recording will not be performed");
@@ -69,12 +75,12 @@ void setup() {
 void loop() { 
   int year, month, day, hours, minutes, seconds;
   do { 
-  year = RTC.getYear();
-  month = RTC.getMonth();
-  day = RTC.getDay();
-  hours = RTC.getHours();
-  minutes = RTC.getMinutes();
-  seconds = RTC.getSeconds();
+    year = RTC.getYear();
+    month = RTC.getMonth();
+    day = RTC.getDay();
+    hours = RTC.getHours();
+    minutes = RTC.getMinutes();
+    seconds = RTC.getSeconds();
   }   
   while (RTC.getMinutes() != minutes);
 
@@ -95,23 +101,26 @@ void loop() {
 
   PrintC(year, month, day, hours, minutes, seconds, temp, true);
   Serial.write(buf);
-  dataFile.println();
 
   if (dataFile) {
+    
     PrintC(year, month, day, hours, minutes, seconds, temp, false);
-    CounterSinceLastMeasure += 1;
-    if (CounterSinceLastMeasure == IterationsBeforeFlush) {
-      CounterSinceLastMeasure = 0;
-      dataFile.flush();
-      Serial.print(" Card enrollment completed");
-      lcd.setCursor(14,0);
-      lcd.print("SD"); 
-    } 
+    
     if (dataFile.write(buf) <= 0) {
       Serial.println("SD card write error");
       lcd.setCursor(11,0);
       lcd.print("ERROR");
-    }   
+    }
+    dataFile.println();   
+    if (++CounterSinceLastMeasure == IterationsBeforeFlush) {
+      CounterSinceLastMeasure = 0;
+      
+      dataFile.flush();
+      
+      Serial.print(" Card flush completed");
+      lcd.setCursor(14,0);
+      lcd.print("SD"); 
+    } 
   }
 
   Serial.println();
