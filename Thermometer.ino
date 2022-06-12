@@ -93,9 +93,9 @@ void loop() {
 
   if (dataFile) {
     PrintC(year, month, day, hours, minutes, seconds, temp, false);
-    if (datafile.write(buf) <= 0) {
+    if (datafile.write(buf) <= 0)
       Serial.println("SD card write error");
-    }
+    
     datafile.println();
   }
 
