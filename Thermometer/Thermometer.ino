@@ -14,7 +14,10 @@ int vccPin = 5;
 int gndPin = 6;
 
 int MeasurePeriod = 3000;
-File datafile;
+
+int IterationsBeforeFlush = 20;
+
+int CounterSinceLastMeasure = 0;
 
 static DS1307 RTC;
 
@@ -23,6 +26,8 @@ LiquidCrystal_I2C lcd(0x3e, 16, 2);
 uint8_t degree[8]  = {140,146,146,140,128,128,128,128};
 
 const int chipSelect = 10;
+
+File dataFile;
 
 char buf[30];
 
@@ -54,7 +59,7 @@ void setup() {
   }
   if (SD.begin(chipSelect)) {
     Serial.println("SD card initialized");
-    datafile = SD.open("datalog.txt", FILE_WRITE);
+    dataFile = SD.open("datalog.txt", FILE_WRITE);
   }        
   else{
     Serial.println("SD card initialization error, recording will not be performed");
@@ -90,13 +95,23 @@ void loop() {
 
   PrintC(year, month, day, hours, minutes, seconds, temp, true);
   Serial.write(buf);
+  dataFile.println();
 
   if (dataFile) {
     PrintC(year, month, day, hours, minutes, seconds, temp, false);
-    if (datafile.write(buf) <= 0)
+    CounterSinceLastMeasure += 1;
+    if (CounterSinceLastMeasure == IterationsBeforeFlush) {
+      CounterSinceLastMeasure = 0;
+      dataFile.flush();
+      Serial.print(" Card enrollment completed");
+      lcd.setCursor(14,0);
+      lcd.print("SD"); 
+    } 
+    if (dataFile.write(buf) <= 0) {
       Serial.println("SD card write error");
-    
-    datafile.println();
+      lcd.setCursor(11,0);
+      lcd.print("ERROR");
+    }   
   }
 
   Serial.println();
