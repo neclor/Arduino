@@ -13,6 +13,9 @@ MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
 int vccPin = 5;
 int gndPin = 6;
 
+int MeasurePeriod = 3000;
+File datafile;
+
 static DS1307 RTC;
 
 LiquidCrystal_I2C lcd(0x3e, 16, 2);
@@ -20,8 +23,6 @@ LiquidCrystal_I2C lcd(0x3e, 16, 2);
 uint8_t degree[8]  = {140,146,146,140,128,128,128,128};
 
 const int chipSelect = 10;
-
-int sdcard = 0;
 
 char buf[30];
 
@@ -53,12 +54,11 @@ void setup() {
   }
   if (SD.begin(chipSelect)) {
     Serial.println("SD card initialized");
-    sdcard = 1;
+    datafile = SD.open("datalog.txt", FILE_WRITE);
   }        
   else{
     Serial.println("SD card initialization error, recording will not be performed");
   }
-  
 }
 
 void loop() { 
@@ -91,25 +91,17 @@ void loop() {
   PrintC(year, month, day, hours, minutes, seconds, temp, true);
   Serial.write(buf);
 
-  if (sdcard == 1) {
-    File dataFile = SD.open("datalog.txt", FILE_WRITE);
+  if (dataFile) {
+    PrintC(year, month, day, hours, minutes, seconds, temp, false);
+    if (datafile.write(buf) <= 0)
+      Serial.println("SD card write error");
     
-    if (dataFile) {
-      PrintC(year, month, day, hours, minutes, seconds, temp, false);
-      dataFile.write(buf);
-      dataFile.println();
-      dataFile.close();
-    }
-    else {
-      Serial.print(" Error writing to SD card");
-      lcd.setCursor(11,0);
-      lcd.print("ERROR");  
-    }
+    datafile.println();
   }
 
   Serial.println();
   
-  delay(3000);
+  delay(MeasurePeriod);
 
   lcd.setCursor(11,0);
   lcd.print("     ");
